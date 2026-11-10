@@ -1,72 +1,14 @@
+# SCARFACE CONTROL — MongoDB edition
 
-# Heroku deployment — Telegram Subscription Sales Manager
+This version keeps the existing Telegram bot workflow and switches its storage layer from PostgreSQL to MongoDB Atlas. Inventory details remain a single multiline text field. Photos use Telegram `file_id`. Supplier, cost, sales, customer history, expenses, reports and reset functionality are retained.
 
-## Important database change
-This Heroku version uses PostgreSQL, not SQLite. Heroku dyno filesystems are ephemeral, so SQLite data stored on a dyno can disappear after restarts/deploys. Attach Heroku Postgres and use the `DATABASE_URL` config var.
+## Heroku configuration
+Set these Config Vars: `BOT_TOKEN`, `ADMIN_ID`, `MONGODB_URI`, and optionally `MONGODB_DATABASE` (defaults to `scarface_control`). `MONGODB_URI` is the MongoDB Atlas connection string. Never commit it or share it.
 
-## 1. Create Telegram bot credentials
-- Create a bot with `@BotFather` and copy its token.
-- Get your numeric Telegram user ID.
-- Never share the token or commit `.env`.
+Do not remove the existing `DATABASE_URL` or delete the old PostgreSQL database until you have exported/backed up any records you need. This code does not automatically migrate PostgreSQL records; it starts using MongoDB as a new database.
 
-## 2. Install Heroku CLI and Git
-Install the Heroku CLI and Git on your computer, then sign in:
+## Deploy
+Replace `bot.py`, `database.py`, and `requirements.txt` in the GitHub repository with the files in this ZIP, then deploy the `main` branch. Keep `Procfile` (`worker: python bot.py`) and `.python-version` unchanged. In Heroku Config Vars, add `MONGODB_URI` and set it to your Atlas connection string. Restart the worker after deployment.
 
-```bash
-heroku login
-```
-
-Unzip this project and open a terminal in its folder.
-
-## 3. Create Heroku app and attach PostgreSQL
-```bash
-heroku create your-unique-app-name
-heroku addons:create heroku-postgresql:essential-0
-```
-
-If the selected Postgres plan is unavailable on your account/region, choose an available Heroku Postgres plan from the dashboard and attach it.
-
-## 4. Set secrets
-```bash
-heroku config:set BOT_TOKEN="YOUR_BOT_TOKEN"
-heroku config:set ADMIN_ID="YOUR_NUMERIC_TELEGRAM_USER_ID"
-```
-
-Heroku automatically supplies `DATABASE_URL` when Postgres is attached. Check:
-```bash
-heroku config:get DATABASE_URL
-```
-Do not paste the database URL into public chats or commit it to Git.
-
-## 5. Deploy
-```bash
-git init
-git add .
-git commit -m "Deploy Telegram subscription manager"
-heroku git:remote -a your-unique-app-name
-git push heroku main
-```
-
-If your local branch is named `master`, use:
-```bash
-git push heroku master:main
-```
-
-## 6. Start one worker dyno
-```bash
-heroku ps:scale worker=1
-heroku ps
-heroku logs --tail
-```
-
-There is no web dyno required for this Telegram long-polling bot. Run exactly one worker to avoid multiple bot polling processes.
-
-## 7. Test
-Open your bot in Telegram and send `/start`. Then test `/addstock`, `/stock`, `/sell`, `/report` and `/report month`.
-
-## Notes
-- Heroku worker dynos run continuously only while you have an active paid dyno allocation. Check current Heroku pricing and account quota.
-- PostgreSQL persists records across dyno restarts; the dyno filesystem does not.
-- Keep a separate database backup. Review Heroku Postgres backup options and your plan.
-- This bot records product names, purchase costs, customer references and transactions. Do not store passwords, session cookies, recovery codes or other account credentials.
-- Only sell/transfer software subscriptions where the provider's terms and your authorization allow it.
+## Security
+Restrict Atlas database-user permissions where practical, use a unique strong password, and keep the connection string private. The bot is admin-only.
